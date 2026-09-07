@@ -1,0 +1,22 @@
+{
+  "base": "https://huangguoai.com",
+  "category": "/ai-duanju/",
+  "retry": 3,
+  "sleep": 1.5,
+  "max_eps": 0,
+  "workers": 3,
+  "rate_per_sec": 2.0,
+  "min_episode_bytes": 100000,
+  "min_duration_sec": 1.0,
+  "out": "/data/huangguoai",
+  "manifest": "/data/huangguoai/manifest.json",
+  "notify": {
+    "enabled": false,
+    "type": "webhook",
+    "url": ""
+  },
+  "cleanup": {
+    "enabled": true,
+    "max_age_h": 24
+  }
+}

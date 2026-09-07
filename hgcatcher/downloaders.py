@@ -59,14 +59,21 @@ class FfmpegDownloader(BaseDownloader):
         ff, fp = ffmpeg_bin(), ffprobe_bin()
 
         def scmd(s):
-            return [ff, "-y", "-headers", "Referer: https://huangguoai.com/\r\n",
-                    "-i", s, "-c", "copy", "-movflags", "+faststart", part]
+            cmd = [ff, "-y", "-headers", "Referer: https://huangguoai.com/\r\n",
+                   "-i", s, "-c", "copy", "-movflags", "+faststart", part]
+            return cmd
+
+        # 代理支持：ffmpeg 无 -proxy 选项(8.x)，用标准小写环境变量传递
+        env = None
+        px = os.environ.get("HG_PROXY", "").strip()
+        if px:
+            env = dict(os.environ, http_proxy=px, https_proxy=px)
 
         cur_src, cmd = src, scmd(src)
         for _ in range(cfg.retry):
             try:
                 p = subprocess.run(cmd, capture_output=True, text=True,
-                                   timeout=900, check=False)
+                                   timeout=900, check=False, env=env)
                 if p.returncode == 0 and os.path.exists(part) \
                         and os.path.getsize(part) > cfg.min_episode_bytes \
                         and probe_duration(part, fp) > cfg.min_duration_sec:

@@ -4,6 +4,7 @@
 升级预留：自定义 header/代理/cookie 多账号/重定向策略都在这层扩展，
 调用方(下载器/主流程)只依赖 fetch 的签名。
 """
+import os
 import time
 import threading
 import requests
@@ -35,10 +36,18 @@ class RateLimiter:
 
 
 def get_session(cfg):
-    """线程本地 Session，每个 worker 一个，避免连接池竞争。"""
+    """线程本地 Session，每个 worker 一个，避免连接池竞争。
+
+    代理支持（NAS 直连被墙时关键）：
+      trust_env=True(默认) 时 requests 自动读 HTTP_PROXY/HTTPS_PROXY/NO_PROXY
+      环境变量；Docker compose 里配 environment 即可让下载走代理。
+    """
     if not hasattr(_tl, "session"):
         s = requests.Session()
         s.headers.update(cfg.headers)
+        env_proxy = os.environ.get("HG_PROXY", "").strip()
+        if env_proxy:
+            s.proxies = {"http": env_proxy, "https": env_proxy}
         _tl.session = s
     return _tl.session
 

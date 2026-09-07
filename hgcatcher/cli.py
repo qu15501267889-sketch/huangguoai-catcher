@@ -30,6 +30,9 @@ def build_parser():
     ap.add_argument("--log", default=None, help="日志文件路径")
     ap.add_argument("--test-notify", action="store_true", help="只测发送提醒后退出")
     ap.add_argument("--no-ratelimit", action="store_true", help="关闭限流(调试)")
+    ap.add_argument("--serve", action="store_true",
+                    help="启动 WebUI 服务模式(浏览器搜索/点选下载)")
+    ap.add_argument("--port", type=int, default=8765, help="WebUI 端口")
     return ap
 
 
@@ -80,6 +83,17 @@ def main():
             manifest_data = json.load(open(manifest, encoding="utf-8"))
         except Exception:
             manifest_data = {}
+
+    # ── WebUI 服务模式：浏览器搜索/点选下载，不扫全站 ──
+    if args.serve:
+        from .webui import Manager, create_app
+        mgr = Manager(cfg, out, manifest, logger, mode=args.mode,
+                      with_meta=True)
+        app = create_app(mgr)
+        logger.info("WebUI 启动: http://0.0.0.0:%d  (NAS 访问 http://<NAS_IP>:%d)",
+                    args.port, args.port)
+        app.run(host="0.0.0.0", port=args.port, threaded=True)
+        return
 
     series = enumerate_series(cfg, limiter, logger)
     if not series:

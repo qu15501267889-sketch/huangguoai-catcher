@@ -1,19 +1,18 @@
 services:
   huangguoai-catcher:
-    build: .
+    image: ghcr.nju.edu.cn/qu15501267889-sketch/huangguoai-catcher:latest
     container_name: huangguoai-catcher
     restart: unless-stopped
+    ports:
+      - "8765:8765"          # WebUI: 浏览器打开 http://<NAS_IP>:8765
     environment:
       - OUT_DIR=/data/huangguoai
       - MANIFEST=/data/huangguoai/manifest.json
       - WORKERS=3
-      # 每 6 小时扫一次（可用 INTERVAL_SEC=21600 覆盖；想只跑一次设 ONCE=1）
-      - INTERVAL_SEC=21600
-      # 调试：只下某几部剧，逗号分隔剧id；空=全部。MAX_EPS 限制单剧最多集数
-      # - ONLY=117,12
-      # - MAX_EPS=0
+      # ── 代理（重要）：NAS 直连 huangguoai.com 被墙，必须配代理 ──
+      # 指向你局域网内任一 HTTP 代理（电脑上的 iKuuu/Clash 开"允许局域网连接"后填电脑IP）
+      # 例: http://192.168.1.6:7890  留空=直连
+      - HG_PROXY=http://192.168.1.6:7890
     volumes:
       # ⚠️ 只改冒号【左边】：填你在 NAS 上想存放视频的真实路径
-      #    冒号【右边】 /data 是容器内部路径，固定不要动
-      #    默认放在 /vol1/docker/huangguoai（和你 Hermes 同一个地方，稳妥）
       - /vol1/docker/huangguoai:/data

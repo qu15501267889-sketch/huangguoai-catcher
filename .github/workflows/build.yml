@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/huangguoai-catcher
+  IMAGE_NAME: qu15501267889-sketch/huangguoai-catcher
 
 jobs:
   build:
@@ -32,3 +32,17 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Make package public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 等包创建完成
+          sleep 10
+          # 用GH CLI设置公开（workflow token有packages:write权限）
+          gh api \
+            -X PATCH \
+            "/user/packages/container/${IMAGE_NAME#*/}" \
+            -f visibility=public \
+            --hostname github.com 2>&1 || \
+          echo "::warning::Could not auto-set package public. Please set manually at: https://github.com/users/${{ github.repository_owner }}/packages/container/${IMAGE_NAME#*/}/settings"

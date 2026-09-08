@@ -13,6 +13,7 @@ _RE_EP_LINK = re.compile(r"/video/(\d+)/ep-(\d+)/")
 _RE_POSTER_SRC = re.compile(r'"posterSrc"\s*:\s*"([^"]+)"')
 _RE_COVER_SRC = re.compile(r'"coverSrc"\s*:\s*"([^"]+)"')
 _RE_OG_IMAGE = re.compile(r'<meta[^>]*property="og:image"[^>]*content="([^"]+)"')
+_RE_META_DESC = re.compile(r'<meta[^>]*name="description"[^>]*content="([^"]+)"')
 _RE_DESC = re.compile(r'"description"\s*:\s*"((?:[^"\\]|\\.)*)"')
 _RE_ITEMLIST = re.compile(
     r'\{"@type":\s*"ListItem",\s*"name":\s*"((?:[^"\\]|\\.)*)",'
@@ -83,15 +84,24 @@ class HuangguoParser(BaseParser):
             if om:
                 poster = om.group(1).replace("&amp;", "&")
                 poster = _unescape(poster)
-        # 剧情简介：JSON-LD description（跳过站点通用简介）
+        # 剧情简介：优先 <meta name="description">，再 JSON-LD description
+        # （站点通用简介特征词一并过滤，防"作品平台"类文案混入）
+        _JUNK = ("高清视频", "一站式平台", "作品平台", "免费在线观看", "每日更新")
         desc = ""
-        for cand in _RE_DESC.findall(html):
-            c = (cand.replace("\\u0026", "&").replace("\\u002F", "/")
-                 .replace("\\n", " ").replace("\\/", "/")
-                 .replace("\\'", "'").replace('\\"', '"').strip())
-            if c and "高清视频" not in c and "一站式平台" not in c and len(c) > 10:
-                desc = c
-                break
+        mm = _RE_META_DESC.search(html)
+        if mm:
+            cand = (mm.group(1).replace("&amp;", "&").replace("&#39;", "'")
+                    .replace("&quot;", '"').strip())
+            if cand and len(cand) > 10 and not any(j in cand for j in _JUNK):
+                desc = cand
+        if not desc:
+            for cand in _RE_DESC.findall(html):
+                c = (cand.replace("\\u0026", "&").replace("\\u002F", "/")
+                     .replace("\\n", " ").replace("\\/", "/")
+                     .replace("\\'", "'").replace('\\"', '"').strip())
+                if c and len(c) > 10 and not any(j in c for j in _JUNK):
+                    desc = c
+                    break
         return title, max_ep, poster, desc
 
     def parse_poster(self, video_html):
